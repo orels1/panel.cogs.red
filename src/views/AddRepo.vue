@@ -16,7 +16,7 @@
               :complete="!!selected.username"
             )
               v-layout(row)
-                div Get repos
+                div Get Repos
 
             v-stepper-content(step="1")
               v-text-field(
@@ -92,25 +92,83 @@
               v-btn(@click="prevStep") Go Back
 
             v-stepper-step(step="4" :complete="validationSuccess")
-              |Validation
+              |Validate Your Repo
 
             v-stepper-content(step="4")
               v-alert(
-                value="validationSuccess"
+                :value="validationSuccess"
+                :color="validationAlert.color"
+                :icon="validationAlert.icon"
+                outline
+              ) {{validationAlert.text}}
+              v-expansion-panel(v-if="validation.results.errors" expand)
+                v-expansion-panel-content(
+                  v-for="(error, i) in validation.results.errors"
+                  :key="i"
+                )
+                  div(slot="header") {{error.message}} in #[kbd {{error.path}}]
+                  v-card(v-if="error.details")
+                    v-card-text
+                      pre
+                        code.wide {{error.details}}
+              p(v-if="!canSubmit").
+                #[br]
+                Your repo has errors that prevent it from being added to cogs.red,
+                 they are listed above.
+                #[br]
+                Please fix them and use "Go Back" button to go back a step
+                 and re-validate your repo or to choose another branch.
+
+              v-dialog(
+                v-model="submitDialog"
+                max-width="600"
+              )
+                v-btn(
+                  slot="activator"
+                  color="primary"
+                  :loading="creation.loading"
+                  :disabled="!canSubmit || creation.loading"
+                ) Submit Repository
+                v-card
+                  v-card-title.headline.grey.darken-2(primaryTitle)
+                    |You are about to submit your repo
+                  v-card-text.
+                    Proceeding to next step will create a new webhook on your repository
+                     that will be used to automatically update your repo on cogs.red.
+                    #[br]#[br]
+                    #[b You will be submitting:]#[br]
+                    Repo called #[code {{selected.repo}}]
+                     by #[code {{selected.username}}]
+                     on branch #[code {{selected.branch}}]
+                    #[br]#[br]
+                    After submitting your repo - it will become immediately available as an
+                     unapproved repository, and Red - Discord Bot QA team will be notified.
+                    #[br]#[br]
+                    Are you sure you want to proceed?
+                  v-divider
+                  v-card-actions
+                    v-spacer
+                    v-btn(
+                      flat
+                      @click="submitDialog = false"
+                    ) No, abort
+                    v-btn(
+                      color="primary"
+                      flat
+                      @click="createNewRepo"
+                    ) Yes, submit
+              v-btn(@click="prevStep") Go Back
+
+            v-stepper-step(step="5" :complete="!!creation.result")
+              |Submit it!
+
+            v-stepper-content(step="5")
+              v-alert(
+                :value="true"
                 color="success"
                 icon="check_circle"
                 outline
-              ) Repo successfully validated!
-              v-list(two-line v-if="validationSuccess")
-                v-list-tile
-                  v-list-tile-content
-                    v-list-tile-title Repo Info
-                    v-list-tile-sub-title.
-                      {{validation.results.repo.name}} by {{validation.results.repo.author.name}}
-                v-list-tile
-                  v-list-tile-content
-                    v-list-tile-title Valid Cogs
-                    v-list-tile-sub-title {{validation.results.cogs.valid.length}}
+              ) {{creation.result}}
 
 
 </template>
@@ -127,27 +185,29 @@ import { mapState, mapGetters, mapActions } from 'vuex';
       validation: state => state.validation,
       repos: state => state.repos,
       branches: state => state.branches,
+      creation: state => state.creation,
     }),
     ...mapGetters(['profile', 'notification']),
   },
   methods: {
-    ...mapActions('addRepo', ['setRepo', 'fetchRepos', 'fetchBranches', 'validate']),
+    ...mapActions('addRepo', ['setRepo', 'fetchRepos', 'fetchBranches', 'validate', 'createRepo']),
     ...mapActions(['notify']),
   },
 })
 export default class AddRepo extends Vue {
   stepIndex = 1;
+  submitDialog = false;
 
   mounted() {
     this.setUserName(this.profile.name);
   }
 
   nextStep() {
-    this.stepIndex = this.stepIndex + 1;
+    this.stepIndex = parseInt(this.stepIndex, 10) + 1;
   }
 
   prevStep() {
-    this.stepIndex = this.stepIndex - 1;
+    this.stepIndex = parseInt(this.stepIndex, 10) - 1;
   }
 
   firstStep() {
@@ -186,17 +246,44 @@ export default class AddRepo extends Vue {
   }
 
   async loadBranches() {
-    await this.fetchBranches();
+    const err = await this.fetchBranches();
+    if (err) {
+      return this.notify({
+        color: 'error',
+        message: err,
+      });
+    }
     if (!this.stepIndex > 2) {
       this.nextStep();
     } else {
       this.stepIndex = 3;
     }
+    return null;
   }
 
   async loadValidation() {
-    await this.validate();
+    const err = await this.validate();
+    if (err) {
+      return this.notify({
+        color: 'error',
+        message: err,
+      });
+    }
     this.nextStep();
+    return null;
+  }
+
+  async createNewRepo() {
+    this.submitDialog = false;
+    const err = await this.createRepo();
+    if (err) {
+      return this.notify({
+        color: 'error',
+        message: err,
+      });
+    }
+    this.nextStep();
+    return null;
   }
 
   get defaultBranch() {
@@ -211,26 +298,40 @@ export default class AddRepo extends Vue {
       : null;
   }
 
-  get canCreateHook() {
-    return !!this.selected.branch && !!this.selected.repo && !!this.selected.username;
-  }
-
   get validationSuccess() {
     return !!Object.keys(this.validation.results).length && !this.validation.loading;
   }
 
-  async createHook() {
-    const resp = await fetch(
-      `http://localhost:3000/github/hooks/${this.username}/${this.selectedRepo}`,
-      {
-        method: 'POST',
-      },
-    );
-    const json = await resp.json();
-    if (json.results.active) this.creationResult = `hook created at ${json.results.config.url}`;
+  get validationAlert() {
+    if (this.validation.passed && this.validation.results.errors.length) {
+      return ({
+        color: 'warning',
+        icon: 'warning',
+        text: 'There were some errors during validation',
+      });
+    }
+    if (!this.validation.passed) {
+      return ({
+        color: 'error',
+        icon: 'error',
+        text: 'Validation did not pass',
+      });
+    }
+    return ({
+      color: 'success',
+      icon: 'check_circle',
+      text: 'Repo successfully validated',
+    });
+  }
+
+  get canSubmit() {
+    return this.validationSuccess && this.validationAlert.color !== 'error';
   }
 }
 </script>
 
 <style scoped>
+.wide {
+  width: 100%;
+}
 </style>

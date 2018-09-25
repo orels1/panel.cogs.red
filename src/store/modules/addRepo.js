@@ -1,5 +1,6 @@
 /* eslint-disable no-param-reassign */
 import c from '@/constants';
+import Vue from 'vue';
 
 const LOAD_REPOS = 'LOAD_REPOS';
 const LOAD_BRANCHES = 'LOAD_BRANCHES';
@@ -8,14 +9,18 @@ const SET_LOAD_START = 'SET_LOAD_START';
 const SET_LOAD_END = 'SET_LOAD_END';
 const SET_LOAD_FAIL = 'SET_LOAD_FAIL';
 const VALIDATE = 'VALIDATE';
+const CLEAR_VALIDATION = 'CLEAR_VALIDATION';
 const SET_VALID = 'SET_VALID';
+const CREATE_REPO = 'CREATE_REPO';
 
-const authedFetch = (url, rootGetters) => {
+const authedFetch = (url, rootGetters, method = 'GET', body) => {
   const { token } = rootGetters;
   return fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+    method,
+    body: body && JSON.stringify(body),
   });
 };
 
@@ -38,6 +43,12 @@ export default {
       username: '',
       repo: '',
       branch: '',
+    },
+    creation: {
+      loading: false,
+      failed: false,
+      error: null,
+      result: null,
     },
     validation: {
       passed: false,
@@ -70,10 +81,18 @@ export default {
       state[payload.type].error = payload.error;
     },
     [VALIDATE](state, payload) {
-      state.validation.results = { ...payload };
+      Object.entries(payload).forEach(([key, val]) => {
+        Vue.set(state.validation.results, key, val);
+      });
+    },
+    [CLEAR_VALIDATION](state) {
+      state.validation.results = {};
     },
     [SET_VALID](state, payload) {
       state.validation.passed = payload;
+    },
+    [CREATE_REPO](state, payload) {
+      state.creation.result = payload;
     },
   },
   actions: {
@@ -115,7 +134,9 @@ export default {
       } catch (e) {
         console.error(e);
         commit(SET_LOAD_FAIL, { type, error: e.message });
+        return e.message;
       }
+      return null;
     },
     setRepo({ commit }, data) {
       commit(SET_REPO, data);
@@ -125,22 +146,50 @@ export default {
         selected: { username, repo, branch },
       } = state;
       const type = 'validation';
+      commit(SET_VALID, false);
+      commit(CLEAR_VALIDATION);
       commit(SET_LOAD_START, { type });
       try {
-        const resp = await fetch(`${c.PARSER}/v2/${username}/${repo}?branch=${branch}`);
+        const resp = await fetch(`${c.PARSER}/v2/${username}/${repo}/${branch}`);
         const json = await resp.json();
 
-        if (!resp.ok) throw new Error(json.error);
-
-        commit(VALIDATE, json);
-        commit(SET_VALID, true);
+        commit(VALIDATE, { errors: json.errors, data: json.result });
+        if (!json.errors.length && json.result.repo) {
+          commit(SET_VALID, true);
+        }
         commit(SET_LOAD_END, { type });
       } catch (e) {
         console.error(e);
         commit(SET_VALID, false);
         commit(SET_LOAD_FAIL, { type, error: e.message });
+        return e.message;
       }
-      // add valid check
+      return null;
+    },
+    async createRepo({ commit, state, rootGetters }) {
+      const {
+        selected: { username, repo, branch },
+      } = state;
+      const type = 'creation';
+      commit(SET_LOAD_START, { type });
+      try {
+        const resp = await authedFetch(`${c.GITHUB}/hooks/`, rootGetters, 'POST', {
+          username,
+          repo,
+          branch,
+        });
+        const json = await resp.json();
+
+        if (!resp.ok) throw new Error(json.error);
+
+        commit(CREATE_REPO, `Successfully submitted ${username}/${repo} on branch ${branch}`);
+        commit(SET_LOAD_END, { type });
+      } catch (e) {
+        console.error(e);
+        commit(SET_LOAD_FAIL, { type, error: e.message });
+        return e.message;
+      }
+      return null;
     },
   },
 };
