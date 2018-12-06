@@ -31,7 +31,7 @@ const AUTH0_DOMAIN = 'cogs.auth0.com';
 
 @Component({
   methods: {
-    ...mapActions(['login', 'logout', 'setProfile', 'authenticate']),
+    ...mapActions(['login', 'logout', 'getUserMeta', 'setProfile', 'authenticate']),
   },
   computed: {
     ...mapGetters(['token', 'authenticated', 'profile']),
@@ -61,8 +61,9 @@ export default class Auth extends Vue {
       this.lock.on('authenticated', (authResult) => {
         const expireMs = authResult.expiresIn * 1000;
         this.login({ token: authResult.idToken, expire: Date.now() + expireMs });
-        this.lock.getUserInfo(authResult.accessToken, (err, profile) => {
+        this.lock.getUserInfo(authResult.accessToken, async (err, profile) => {
           this.setProfile(profile);
+          await this.getUserMeta();
           this.authenticate();
         });
       });
