@@ -33,7 +33,8 @@
                     v-list-tile
                       v-list-tile-content
                         v-list-tile-title Go darkside!
-                        v-list-tile-sub-title Click on the moon icon in the top-right of the page 😎
+                        v-list-tile-sub-title.
+                          Click on the half-moon icon in the top-right of the page 😎
 
 </template>
 
