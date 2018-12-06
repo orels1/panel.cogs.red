@@ -1,5 +1,6 @@
 /* eslint-disable no-param-reassign */
 import c from '@/constants';
+import { authedFetch } from '@/utils';
 import Vue from 'vue';
 
 const LOAD_REPOS = 'LOAD_REPOS';
@@ -12,17 +13,6 @@ const VALIDATE = 'VALIDATE';
 const CLEAR_VALIDATION = 'CLEAR_VALIDATION';
 const SET_VALID = 'SET_VALID';
 const CREATE_REPO = 'CREATE_REPO';
-
-const authedFetch = (url, rootGetters, method = 'GET', body) => {
-  const { token } = rootGetters;
-  return fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    method,
-    body: body && JSON.stringify(body),
-  });
-};
 
 export default {
   namespaced: true,
