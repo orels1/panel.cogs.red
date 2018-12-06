@@ -8,6 +8,7 @@ const TAGS = `${API}misc/tags/top`;
 const SEARCH = `${API}search/cogs`;
 const GITHUB = `${API}github`;
 const PARSER = `${API}parser`;
+const PANEL = `${API}panel`;
 
 export default {
   API,
@@ -17,4 +18,5 @@ export default {
   SEARCH,
   GITHUB,
   PARSER,
+  PANEL,
 };
