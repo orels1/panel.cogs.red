@@ -10,25 +10,29 @@ const checkAuth = (to, from, next) => {
   const { expire, token } = store.getters;
   if (!token) return next();
   if (Date.now() < expire) return next();
-  return store.getters.lock.checkSession({}, (err, authResult) => {
+  return store.getters.lock.checkSession({}, async (err, authResult) => {
     if (err) {
       console.log(err);
       store.dispatch('notify', {
         color: 'error',
         message: 'Authorization expired, redirecting to auth page.',
       });
-      setTimeout(() => next({ name: 'Auth' }), 3000);
-    } else {
-      const expireMs = authResult.expiresIn * 1000;
-      store.dispatch('login', { token: authResult.idToken, expire: Date.now() + expireMs });
-      next();
+      store.dispatch('logout');
+      store.dispatch('setLoginFail', true);
+      store.dispatch('clearUser');
+      return next({ name: 'Auth' });
     }
+    const expireMs = authResult.expiresIn * 1000;
+    store.dispatch('login', { token: authResult.idToken, expire: Date.now() + expireMs });
+    await store.dispatch('getUserMeta');
+    store.dispatch('setLoginFail', false);
+    return next();
   });
 };
 
 const requireAuth = (to, from, next) => {
   const { token } = store.getters;
-  if (!token) return next({ name: 'Auth' });
+  if (!token) return next('/auth');
   return next();
 };
 
@@ -51,6 +55,12 @@ export default new Router({
           name: 'Add Repo',
           beforeEnter: requireAuth,
           component: () => import('./views/AddRepo.vue'),
+        },
+        {
+          path: '/dashboard',
+          name: 'Dashboard',
+          beforeEnter: requireAuth,
+          component: () => import('./views/Dashboard.vue'),
         },
         {
           path: '/auth',
