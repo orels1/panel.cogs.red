@@ -59,7 +59,13 @@
                             v-icon(small) visibility_off
                           span Hide
                         v-tooltip(right)
-                          v-btn(icon color="red" small slot="activator")
+                          v-btn(
+                            icon
+                            color="red"
+                            small
+                            slot="activator"
+                            @click="deleteRepo(props.item)"
+                          )
                             v-icon(small) delete
                           span Delete
 
@@ -79,7 +85,7 @@ import { mapActions, mapGetters, mapState } from 'vuex';
     ...mapGetters(['meta']),
   },
   methods: {
-    ...mapActions('dashboard', ['loadRepos', 'loadAllrepos']),
+    ...mapActions('dashboard', ['loadRepos', 'loadAllrepos', 'removeRepo']),
     ...mapActions(['notify']),
   },
 })
@@ -119,6 +125,29 @@ export default class Dashboard extends Vue {
     const err = await this.loadRepos();
     if (err) {
       this.notify({
+        color: 'error',
+        message: err,
+      });
+    }
+    return null;
+  }
+
+  async deleteRepo(repo) {
+    let err = await this.removeRepo({
+      repo: repo.name,
+      username: repo.author.username,
+      branch: repo.branch,
+    });
+    if (err) {
+      return this.notify({
+        color: 'error',
+        message: err,
+      });
+    }
+    err = null;
+    err = await this.meta.admin ? this.loadAllRepos() : this.loadRepos();
+    if (err) {
+      return this.notify({
         color: 'error',
         message: err,
       });
