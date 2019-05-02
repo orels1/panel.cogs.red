@@ -41,7 +41,7 @@ const requireAuth = (to, from, next) => {
   return next();
 };
 
-export default new Router({
+const router = new Router({
   mode: 'history',
   base: process.env.BASE_URL,
   routes: [
@@ -52,7 +52,7 @@ export default new Router({
       children: [
         {
           path: '/',
-          name: 'home',
+          name: 'Home',
           component: Home,
         },
         {
@@ -76,3 +76,10 @@ export default new Router({
     },
   ],
 });
+
+router.beforeEach((to, from, next) => {
+  document.title = (to.meta && to.meta.title && to.meta.title(to)) || `${to.name} | panel.cogs.red`;
+  next();
+});
+
+export default router;
