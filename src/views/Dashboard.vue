@@ -141,8 +141,8 @@
                   tr
                     td
                       span(
-                        :class="isAdmin && 'yellow--text text--darken-1'") {{props.item.username}}
-                      span.pl-2(v-if="isAdmin" class="grey--text text--lighten-3") [admin]
+                        :class="getUserAdminFlag(props.item) && 'yellow--text text--darken-1'") {{props.item.nickname}}
+                      span.pl-2(v-if="getUserAdminFlag(props.item)" class="grey--text text--lighten-3") [admin]
                     td
                       v-edit-dialog(
                         v-if="props.item.app_metadata && props.item.app_metadata.roles"
@@ -267,6 +267,13 @@ export default class Dashboard extends Vue {
     if (amount >= 10) {
       return 'error';
     }
+  }
+
+  getUserAdminFlag(user) {
+    if (!user.app_metadata) {
+      return false;
+    }
+    return user.app_metadata.admin;
   }
   /* eslint-enable class-methods-use-this */
 
