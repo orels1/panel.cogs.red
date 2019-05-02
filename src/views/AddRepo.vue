@@ -3,7 +3,7 @@
     v-slide-y-transition(mode="out-in")
       v-layout(column)
         v-card
-          v-card-title.headline.grey.darken-4 Add a repo to cogs.red
+          v-card-title.headline.grey(:class="[darkTheme ? 'darken-4' : 'lighten-2']") Add a repo to cogs.red
           v-card-text.
             Want to share your shiny new repository full of awesome cogs with all of the
              Red - Discord Bot community? This is the place to go!
@@ -187,7 +187,7 @@ import { mapState, mapGetters, mapActions } from 'vuex';
       branches: state => state.branches,
       creation: state => state.creation,
     }),
-    ...mapGetters(['profile']),
+    ...mapGetters(['darkTheme', 'profile']),
   },
   methods: {
     ...mapActions('addRepo', ['setRepo', 'fetchRepos', 'fetchBranches', 'validate', 'createRepo']),
