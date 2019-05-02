@@ -199,7 +199,7 @@ export default class AddRepo extends Vue {
   submitDialog = false;
 
   mounted() {
-    this.setUserName(this.profile.name);
+    this.setUserName(this.profile.nickname);
   }
 
   nextStep() {
