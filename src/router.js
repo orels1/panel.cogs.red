@@ -6,10 +6,15 @@ import Auth from './views/Auth.vue';
 
 Vue.use(Router);
 
-const checkAuth = (to, from, next) => {
-  const { expire, token } = store.getters;
+const checkAuth = async (to, from, next) => {
+  const { expire, token, meta } = store.getters;
   if (!token) return next();
-  if (Date.now() < expire) return next();
+  if (Date.now() < expire) {
+    if (!meta.roles.length) {
+      await store.dispatch('getUserMeta');
+    }
+    return next();
+  }
   return store.getters.lock.checkSession({}, async (err, authResult) => {
     if (err) {
       console.log(err);

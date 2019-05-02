@@ -28,10 +28,10 @@
         v-icon(v-html="miniVariant ? 'chevron_right' : 'chevron_left'")
       v-toolbar-title(v-text="title")
       v-spacer
-      v-badge.role-badge(right overlap :color="meta.admin ? 'orange' : 'purple'")
-        v-icon(v-if="meta.admin" slot="badge" dark small) flag
+      v-badge.role-badge(right overlap :color="isAdmin ? 'orange' : 'purple'")
+        v-icon(v-if="isAdmin" slot="badge" dark small) flag
         span.font-weight-bold(
-          v-if="!meta.admin && meta.roles.includes('QA')"
+          v-if="isQA"
           class="font-weight-bold"
           slot="badge"
         ) QA
@@ -47,6 +47,7 @@
       v-snackbar(
         :value="notification.shown"
         :color="notification.color"
+        v-if="notification.shown"
         right
         bottom
         absolute
@@ -66,7 +67,7 @@ import { mapGetters, mapActions } from 'vuex';
 
 @Component({
   computed: {
-    ...mapGetters(['darkTheme', 'authenticated', 'profile', 'notification', 'meta']),
+    ...mapGetters(['darkTheme', 'authenticated', 'profile', 'notification', 'meta', 'isAdmin', 'isQA']),
   },
   methods: {
     ...mapActions(['setDarkTheme']),
