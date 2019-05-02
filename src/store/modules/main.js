@@ -39,8 +39,8 @@ export default {
     authenticated: state => state.authenticated,
     profile: state => state.profile,
     meta: state => state.meta,
-    isAdmin: state => state.meta && !!state.meta.admin,
-    isQA: state => state.meta && state.meta.roles && state.meta.roles.includes('qa'),
+    isAdmin: state => (state.meta ? !!state.meta.admin : false),
+    isQA: state => (state.meta ? state.meta.roles && state.meta.roles.includes('qa') : false),
     notification: state => state.notification,
   },
   mutations: {
