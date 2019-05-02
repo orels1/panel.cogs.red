@@ -141,10 +141,11 @@
                   tr
                     td
                       span(
-                        :class="isAdmin && 'yellow--text text--darken-1'") {{props.item.name}}
+                        :class="isAdmin && 'yellow--text text--darken-1'") {{props.item.username}}
                       span.pl-2(v-if="isAdmin" class="grey--text text--lighten-3") [admin]
-                    td(v-if="props.item.app_metadata && props.item.app_metadata.roles")
+                    td
                       v-edit-dialog(
+                        v-if="props.item.app_metadata && props.item.app_metadata.roles"
                         :return-value.sync="props.item.name"
                         lazy
                         @close="updateRoles(props.item)"
