@@ -151,8 +151,7 @@
                         @open="saveOldRoles(props.item)"
                       ) 
                         v-chip(
-                          v-if="props.item.app_metadata && props.item.app_metadata.roles"
-                          v-for="role in props.item.app_metadata.roles"
+                          v-for="role in (props.item.app_metadata ? props.item.app_metadata.roles : [])"
                           :key="role"
                         ) {{role}}
                         template(slot="input")
