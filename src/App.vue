@@ -56,7 +56,7 @@
     v-footer.pa-3(text-xs-right height="auto")
       v-layout(row justify-end align-center)
         div Found an issue?
-        v-btn(href="https://github.com" target="_blank" depressed) File an issue!
+        v-btn(href="https://github.com/orels1/panel.cogs.red/issues/new" target="_blank" depressed) File an issue!
 </template>
 
 <script>
