@@ -141,7 +141,7 @@
                   tr
                     td
                       span(:class="props.item.app_metadata.admin && 'yellow--text text--darken-1'") {{props.item.name}}
-                      span.pl-2(class="grey--text text--lighten-3") [admin]
+                      span.pl-2(v-if="props.item.app_metadata.admin" class="grey--text text--lighten-3") [admin]
                     td
                       v-edit-dialog(
                         :return-value.sync="props.item.name"
