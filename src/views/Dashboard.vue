@@ -140,9 +140,10 @@
                 template(slot="items" scope="props")
                   tr
                     td
-                      span(:class="props.item.app_metadata.admin && 'yellow--text text--darken-1'") {{props.item.name}}
-                      span.pl-2(v-if="props.item.app_metadata.admin" class="grey--text text--lighten-3") [admin]
-                    td
+                      span(
+                        :class="isAdmin && 'yellow--text text--darken-1'") {{props.item.name}}
+                      span.pl-2(v-if="isAdmin" class="grey--text text--lighten-3") [admin]
+                    td(v-if="props.item.app_metadata && props.item.app_metadata.roles")
                       v-edit-dialog(
                         :return-value.sync="props.item.name"
                         lazy
