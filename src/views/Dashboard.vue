@@ -145,13 +145,16 @@
                       span.pl-2(v-if="getUserAdminFlag(props.item)" class="grey--text text--lighten-3") [admin]
                     td
                       v-edit-dialog(
-                        v-if="props.item.app_metadata && props.item.app_metadata.roles"
                         :return-value.sync="props.item.name"
                         lazy
                         @close="updateRoles(props.item)"
                         @open="saveOldRoles(props.item)"
                       ) 
-                        v-chip(v-for="role in props.item.app_metadata.roles" :key="role") {{role}}
+                        v-chip(
+                          v-if="props.item.app_metadata && props.item.app_metadata.roles"
+                          v-for="role in props.item.app_metadata.roles"
+                          :key="role"
+                        ) {{role}}
                         template(slot="input")
                           div(style="min-height: 200px;")
                             v-select(
