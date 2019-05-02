@@ -39,6 +39,8 @@ export default {
     authenticated: state => state.authenticated,
     profile: state => state.profile,
     meta: state => state.meta,
+    isAdmin: state => state.meta && !!state.meta.admin,
+    isQA: state => state.meta && state.meta.roles && state.meta.roles.includes('qa'),
     notification: state => state.notification,
   },
   mutations: {
@@ -59,12 +61,17 @@ export default {
     },
     [LOGOUT]: (state) => {
       state.token = null;
+      state.expire = 0;
     },
     [DEAUTH]: (state) => {
       state.authenticated = false;
     },
     [CLEAR_PROFILE]: (state) => {
       state.profile = {};
+      state.meta = {
+        admin: false,
+        roles: [],
+      };
     },
     [SHOW_NOTIFICATION]: (state, { color, message }) => {
       state.notification.color = color || undefined;

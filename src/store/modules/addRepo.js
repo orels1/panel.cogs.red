@@ -144,7 +144,7 @@ export default {
         const json = await resp.json();
 
         commit(VALIDATE, { errors: json.errors, data: json.result });
-        if (!json.errors.length && json.result.repo) {
+        if (!json.errors.filter(i => i.level === 'error').length && json.result.repo) {
           commit(SET_VALID, true);
         }
         commit(SET_LOAD_END, { type });

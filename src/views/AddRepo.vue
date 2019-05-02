@@ -303,7 +303,10 @@ export default class AddRepo extends Vue {
   }
 
   get validationAlert() {
-    if (this.validation.passed && this.validation.results.errors.length) {
+    if (
+      this.validation.passed &&
+      this.validation.results.errors.filter(i => i.level === 'error').length
+    ) {
       return ({
         color: 'warning',
         icon: 'warning',

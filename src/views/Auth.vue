@@ -16,8 +16,13 @@
                     br
                     v-divider
                     br
-                  v-btn(color="primary" @click="loginClick" v-if="!authenticated") Log in
-                  v-btn(color="danger" @click="logoutClick" v-if="authenticated") Log out
+                  v-btn(
+                    color="primary"
+                    @click="loginClick"
+                    v-if="!authenticated"
+                    :loading="token && !authenticated"
+                  ) Log in
+                  v-btn(color="error" @click="logoutClick" v-if="authenticated") Log out
 </template>
 
 <script>
