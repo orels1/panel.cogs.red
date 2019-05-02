@@ -73,6 +73,9 @@ export default class Auth extends Vue {
         });
       });
       this.lock.on('authorization_error', (error) => {
+        if (error.error === 'invalid_token') {
+          window.location.reload();
+        }
         console.log(error);
       });
     });
