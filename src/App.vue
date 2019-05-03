@@ -50,7 +50,6 @@
         v-if="notification.shown"
         right
         bottom
-        absolute
       ) {{notification.message}}
       router-view
     v-footer.pa-3(text-xs-right height="auto")
