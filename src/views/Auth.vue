@@ -28,7 +28,6 @@
 <script>
 import Vue from 'vue';
 import Component from 'vue-class-component';
-import Auth0Lock from 'auth0-lock';
 import { mapGetters, mapActions } from 'vuex';
 
 const AUTH0_CID = 'kzKXKzSJyqlWAmbNEeOrYSgShTGjd6de';
@@ -39,19 +38,11 @@ const AUTH0_DOMAIN = 'cogs.auth0.com';
     ...mapActions(['login', 'logout', 'getUserMeta', 'setProfile', 'authenticate']),
   },
   computed: {
-    ...mapGetters(['token', 'authenticated', 'profile']),
+    ...mapGetters(['token', 'lock', 'authenticated', 'profile']),
   },
 })
 export default class Auth extends Vue {
-  lock = new Auth0Lock(AUTH0_CID, AUTH0_DOMAIN, {
-    autoclose: true,
-    auth: {
-      responseType: 'token id_token',
-    },
-  });
-
   loginClick() {
-    console.log('showing lock');
     this.lock.show();
   }
 
