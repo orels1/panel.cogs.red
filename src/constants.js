@@ -7,6 +7,7 @@ const GITHUB = `${API}github`;
 const PARSER = `${API}parser`;
 const PANEL = `${API}panel`;
 const USERS = `${API}users`;
+const REPORTS = `${API}reports`;
 
 export default {
   API,
@@ -18,4 +19,5 @@ export default {
   PARSER,
   PANEL,
   USERS,
+  REPORTS,
 };

@@ -1,12 +1,11 @@
 {
   "version": 2,
   "name": "panel.cogs.red",
-  "builds": [
-    {
-      "src": "now-build.sh",
-      "use": "@now/static-build"
+  "build": {
+    "env": {
+      "VUE_APP_API": "@api-root"
     }
-  ],
+  },
   "routes": [
     {
       "src": "^/js/(.*)",

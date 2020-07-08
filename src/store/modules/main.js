@@ -18,8 +18,6 @@ const CLEAR_USER_META = 'CLEAR_USER_META';
 export default {
   state: {
     darkTheme: false,
-    token: null,
-    expire: 0,
     authenticated: false,
     profile: {},
     meta: {
@@ -34,8 +32,6 @@ export default {
   },
   getters: {
     darkTheme: state => state.darkTheme,
-    token: state => state.token,
-    expire: state => state.expire,
     authenticated: state => state.authenticated,
     profile: state => state.profile,
     meta: state => state.meta,
@@ -107,9 +103,9 @@ export default {
     authenticate({ commit }) {
       commit(AUTHENTICATE);
     },
-    async getUserMeta({ commit, rootGetters }) {
+    async getUserMeta({ commit }) {
       try {
-        const resp = await authedFetch(`${c.PANEL}/meta`, rootGetters);
+        const resp = await authedFetch(`${c.USERS}/current/meta`);
         const json = await resp.json();
 
         if (!resp.ok) throw new Error(json.error);

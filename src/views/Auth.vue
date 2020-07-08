@@ -9,7 +9,7 @@
             v-card
               v-card-title
                 v-layout(column)
-                  .text-xs-center(v-if="authenticated && profile.nickname")
+                  .text-xs-center(v-if="$auth.isAuthenticated && profile.nickname")
                     |Welcome, {{profile.nickname}}!
                     v-btn(to="/" flat) Go back to mainpage.
                     br
@@ -19,10 +19,10 @@
                   v-btn(
                     color="primary"
                     @click="loginClick"
-                    v-if="!authenticated"
-                    :loading="token && !authenticated"
+                    v-if="!$auth.isAuthenticated"
+                    :loading="$auth.loading && !$auth.isAuthenticated"
                   ) Log in
-                  v-btn(color="error" @click="logoutClick" v-if="authenticated") Log out
+                  v-btn(color="error" @click="logoutClick" v-if="$auth.isAuthenticated") Log out
 </template>
 
 <script>
@@ -34,39 +34,22 @@ const AUTH0_CID = 'kzKXKzSJyqlWAmbNEeOrYSgShTGjd6de';
 const AUTH0_DOMAIN = 'cogs.auth0.com';
 
 @Component({
-  methods: {
-    ...mapActions(['login', 'logout', 'getUserMeta', 'setProfile', 'authenticate']),
-  },
   computed: {
-    ...mapGetters(['token', 'lock', 'authenticated', 'profile']),
+    ...mapGetters(['profile']),
   },
 })
 export default class Auth extends Vue {
   loginClick() {
-    this.lock.show();
+    this.$auth.loginWithRedirect();
   }
 
   logoutClick() {
-    this.logout();
-    document.location.reload();
+    this.$auth.logout({
+      returnTo: window.location.origin
+    });
   }
 
   mounted() {
-    Vue.nextTick(() => {
-      if (this.authenticated) return;
-      this.lock.on('authenticated', (authResult) => {
-        const expireMs = authResult.expiresIn * 1000;
-        this.login({ token: authResult.idToken, expire: Date.now() + expireMs });
-        this.lock.getUserInfo(authResult.accessToken, async (err, profile) => {
-          this.setProfile(profile);
-          await this.getUserMeta();
-          this.authenticate();
-        });
-      });
-      this.lock.on('authorization_error', (error) => {
-        console.log(error);
-      });
-    });
   }
 }
 </script>

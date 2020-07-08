@@ -86,14 +86,14 @@ export default {
     },
   },
   actions: {
-    async fetchRepos({ commit, state, rootGetters }) {
+    async fetchRepos({ commit, state }) {
       const {
         selected: { username },
       } = state;
       const type = 'repos';
       commit(SET_LOAD_START, { type });
       try {
-        const resp = await authedFetch(`${c.GITHUB}/repos/${username}`, rootGetters);
+        const resp = await authedFetch(`${c.GITHUB}/info/${username}`);
         const json = await resp.json();
 
         if (!resp.ok) throw new Error(json.error);
@@ -107,14 +107,14 @@ export default {
       }
       return null;
     },
-    async fetchBranches({ commit, state, rootGetters }) {
+    async fetchBranches({ commit, state }) {
       const {
         selected: { username, repo },
       } = state;
       const type = 'branches';
       commit(SET_LOAD_START, { type });
       try {
-        const resp = await authedFetch(`${c.GITHUB}/branches/${username}/${repo}`, rootGetters);
+        const resp = await authedFetch(`${c.GITHUB}/info/${username}/${repo}/branches`);
         const json = await resp.json();
 
         if (!resp.ok) throw new Error(json.error);
@@ -140,7 +140,7 @@ export default {
       commit(CLEAR_VALIDATION);
       commit(SET_LOAD_START, { type });
       try {
-        const resp = await fetch(`${c.PARSER}/v2/${username}/${repo}/${branch}`);
+        const resp = await fetch(`${c.PARSER}/${username}/${repo}/${branch}`);
         const json = await resp.json();
 
         commit(VALIDATE, { errors: json.errors, data: json.result });
@@ -156,14 +156,14 @@ export default {
       }
       return null;
     },
-    async createRepo({ commit, state, rootGetters }) {
+    async createRepo({ commit, state }) {
       const {
         selected: { username, repo, branch },
       } = state;
       const type = 'creation';
       commit(SET_LOAD_START, { type });
       try {
-        const resp = await authedFetch(`${c.GITHUB}/hooks/`, rootGetters, 'POST', {
+        const resp = await authedFetch(`${c.GITHUB}/hooks/`, 'POST', {
           username,
           repo,
           branch,

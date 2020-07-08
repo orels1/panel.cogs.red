@@ -34,13 +34,13 @@
                   tr(@click="expandRepo(props.item.path, props, $event)")
                     td
                       |{{props.item.name}}
-                      v-tooltip(right v-if="reports[props.item.name]")
+                      v-tooltip(right v-if="props.item.reports.length")
                         v-icon.ml-2(
                           small
                           slot="activator"
-                          :color="getReportsColor(reports[props.item.name])"
+                          :color="getReportsColor(props.item.reports.length)"
                         ) error_outline
-                        span Reports: {{reports[props.item.name]}}
+                        span Reports: {{props.item.reports.length}}
 
                     td.text-xs-right {{props.item.branch}}
                     td.text-xs-right {{props.item.author.username}}
@@ -61,7 +61,7 @@
                             v-icon.hideIcon(small)
                               |{{props.item.hidden ? 'visibility_on' : 'visibility_off'}}
                           span {{props.item.hidden ? 'Show' : 'Hide' }}
-                        v-tooltip(left)
+                        v-tooltip(left v-if="isAdmin")
                           v-btn(
                             icon
                             color="red"
@@ -95,27 +95,30 @@
                   v-card(flat)
                     v-card-text
                       v-layout(row wrap justify-start)
-                        v-list.pt-0.reports-list
-                          v-list-group(
-                            v-for="cog in cogs[props.item.path]"
-                            :key="cog.path"
-                            v-model="cog.expanded"
-                            :prepend-icon="cog.reports.length ? 'error' : 'done'"
-                            no-action
-                          )
-                            template(v-slot:activator)
-                              v-list-tile
-                                v-list-tile-content
-                                  v-list-tile-title {{cog.name}}
-                            v-list-tile.pb-1(
-                              v-for="report in cog.reports"
-                              :key="report.timestamp"
+                        v-flex(xs12)
+                          v-list.pt-0
+                            v-list-group(
+                              v-for="cog in cogs[props.item.path]"
+                              :key="cog.path"
+                              :value="cogExpandedStates[cog.path]"
+                              @change="expandCog(cog.path)"
+                              :prepend-icon="cog.reports.length ? 'error' : 'done'"
+                              :disabled="!cog.reports.length"
+                              :append-icon="cog.reports.length ? 'keyboard_arrow_down' : ''"
+                              no-action
                             )
-                              v-list-tile-content
-                                v-list-tile-title {{getReportLabel(report.type)}}
-                                v-list-tile-sub-title(v-if="report.comment") {{report.comment}}
-                              v-list-tile-action
-                                v-list-tile-action-text {{getFormattedTimestamp(report.timestamp)}}
+                              template(v-slot:activator)
+                                v-list-tile
+                                  v-list-tile-content
+                                    v-list-tile-title {{cog.name}}
+                              reports-list(
+                                :reports="cog.reports"
+                                :onSeenClick="seeReport"
+                                :onUnSeenClick="unSeeReport"
+                                :onDismissClick="dismissReport"
+                                :onUnDismissClick="restoreReport"
+                                :actionAccess="actionAccess"
+                              )
         v-flex(d-flex)
           v-card(max-width="100%" v-if="isAdmin")
             v-card-title.headline.grey(:class="[darkTheme ? 'darken-4' : 'lighten-2']")
@@ -169,13 +172,17 @@
 import Vue from 'vue';
 import Component from 'vue-class-component';
 import { mapActions, mapGetters } from 'vuex';
+import ReportsList from '@/components/ReportsList.vue';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
-import relativeTime from 'dayjs/plugin/relativeTime'
+import relativeTime from 'dayjs/plugin/relativeTime';
 
 dayjs.extend(relativeTime);
 
 @Component({
+  components: {
+    'reports-list': ReportsList,
+  },
   computed: {
     ...mapGetters(
       'dashboard',
@@ -203,7 +210,8 @@ dayjs.extend(relativeTime);
         'approveRepo',
         'loadCogs',
         'loadUsers',
-        'updateUser'
+        'updateUser',
+        'markReport',
       ]
     ),
     ...mapActions(['notify']),
@@ -211,13 +219,9 @@ dayjs.extend(relativeTime);
 })
 export default class Dashboard extends Vue {
   search = '';
-  reportLabelMapping = {
-    'api_abuse': 'Api abuse',
-    'malware': 'Malware',
-    'license': 'License infringement'
-  }
 
   oldRoles = [];
+  cogExpandedStates = {};
 
   get reposHeaders() {
     const headers = [
@@ -251,14 +255,6 @@ export default class Dashboard extends Vue {
     return dayjs(updated || created).format('DD MMM');
   }
 
-  getFormattedTimestamp(timestamp) {
-    return dayjs(timestamp).fromNow();
-  }
-
-  getReportLabel(value) {
-    return this.reportLabelMapping[value];
-  }
-
   getReportsColor(amount) {
     if (amount < 5) {
       return 'hsl(0, 0%, 80%)';
@@ -287,14 +283,12 @@ export default class Dashboard extends Vue {
         message: err,
       });
     }
-    if (this.actionAccess) {
-      err = await this.loadReports();
-      if (err) {
-        return this.notify({
-          color: 'error',
-          message: err,
-        });
-      }
+    err = await this.loadReports(this.actionAccess);
+    if (err) {
+      return this.notify({
+        color: 'error',
+        message: err,
+      });
     }
     return null;
   }
@@ -314,6 +308,14 @@ export default class Dashboard extends Vue {
     }
     props.expanded = !props.expanded; /* eslint-disable-line no-param-reassign */
     return null;
+  }
+
+  expandCog(path) {
+    if (Object.keys(cogExpandedStates).includes(path)) {
+      cogExpandedStates[path] = !cogExpandedStates[path];
+      return;
+    }
+    cogExpandedStates[path] = true;
   }
 
   async deleteRepo(repo) {
@@ -379,6 +381,37 @@ export default class Dashboard extends Vue {
     await this.fetchRepos();
   }
 
+  async reportAction(type, value, id) {
+    const err = await this.markReport({
+      type,
+      value,
+      id,
+    });
+    if (err) {
+      return this.notify({
+        color: 'error',
+        message: err,
+      });
+    }
+    return null;
+  }
+  /* eslint-disable class-methods-use-this */
+  async seeReport(report) {
+    await this.reportAction('seen', true, report.id);
+  }
+
+  async unSeeReport(report) {
+    await this.reportAction('seen', false, report.id);
+  }
+
+  async dismissReport(report) {
+    await this.reportAction('stale', true, report.id);
+  }
+
+  async restoreReport(report) {
+    await this.reportAction('stale', false, report.id);
+  }
+
   async mounted() {
     if (this.shouldFetchRepos) {
       await this.fetchRepos();
@@ -389,7 +422,19 @@ export default class Dashboard extends Vue {
   }
 }
 </script>
+<style>
+.tile-normal .v-list__tile {
+  height: 48px;
+}
 
+.tile-large .v-list__tile {
+  height: 88px;
+}
+
+.v-list__group__items--no-action .v-list__tile {
+  padding-left: 16px;
+}
+</style>
 <style scoped>
 .icon {
   padding: 10px 10.5px;
@@ -405,5 +450,13 @@ export default class Dashboard extends Vue {
 
 .reports-list {
   width: 100%;
+}
+
+.tile-large {
+  height: 88px;
+}
+
+.tile-normal {
+  height: 48px;
 }
 </style>

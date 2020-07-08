@@ -11,6 +11,9 @@ const modules = {};
 
 requireModule.keys().forEach((fileName) => {
   const moduleName = camelCase(fileName.replace(/(\.\/|\.js)/g, ''));
+  if (moduleName.startsWith('_')) {
+    return;
+  }
   modules[moduleName] = requireModule(fileName).default;
 });
 

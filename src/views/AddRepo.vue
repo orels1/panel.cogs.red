@@ -65,7 +65,7 @@
           v-stepper-step(
             step="3"
             :editable="stepIndex > 3"
-            :complete="!!selected.branch"
+            :complete="branchChecked && !!selected.branch"
           )
             |Select Branch
 
@@ -196,6 +196,7 @@ import { mapState, mapGetters, mapActions } from 'vuex';
 })
 export default class AddRepo extends Vue {
   stepIndex = 1;
+  branchChecked = false;
   submitDialog = false;
 
   mounted() {
@@ -256,6 +257,7 @@ export default class AddRepo extends Vue {
     if (!this.stepIndex > 2) {
       this.nextStep();
     } else {
+      this.branchChecked = true;
       this.stepIndex = 3;
     }
     return null;
